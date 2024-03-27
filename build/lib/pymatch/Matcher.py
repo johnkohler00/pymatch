@@ -191,6 +191,7 @@ class Matcher:
                 matches = ctrl_scores.loc[bool_match[bool_match.scores].index]
             elif method == 'min':
                 matches = abs(ctrl_scores - score).sort_values('scores').head(nmatches)
+                matches = matches[matches.scores <= threshold]
             else:
                 raise(AssertionError, "Invalid method parameter, use ('random', 'min')")
             if len(matches) == 0:
