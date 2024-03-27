@@ -331,7 +331,7 @@ class Matcher:
                     "std_mean_diff_before",
                     "std_mean_diff_after"
                 ]
-
+        return test_results
         return pd.DataFrame(test_results)[var_order] if return_table else None
     
     def compare_continuous(self, save=False, return_table=False):
