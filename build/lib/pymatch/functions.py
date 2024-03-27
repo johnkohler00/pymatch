@@ -2,7 +2,7 @@ from __future__ import division
 from pymatch import *
 import sys
 import numpy as np
-
+import pandas as pd
 
 def drop_static_cols(df, yvar, cols=None):
     if not cols:
