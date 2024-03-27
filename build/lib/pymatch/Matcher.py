@@ -319,7 +319,7 @@ class Matcher:
     def compare_continuous_mp(self, save=False, return_table=False):
         # multiprocess calculations
         pool = mp.Pool(mp.cpu_count())
-        xs, test_results = unzip(pool.map(self.process_column, self.matched_data.columns))
+        xs, test_results = zip(*pool.map(self.process_column, self.matched_data.columns))
         pool.close()
         pool.join()
 
