@@ -146,7 +146,7 @@ class Matcher:
             scores += m.predict(self.X[m.params.index])
         self.data['scores'] = scores/self.nmodels
 
-    def match(self, threshold=0.001, nmatches=1, method='min', max_rand=10):
+    def match(self, threshold=0.001, nmatches=1, method='min', max_rand=10, nshuffle=100):
         """
         Finds suitable match(es) for each record in the minority
         dataset, if one exists. Records are exlcuded from the final
@@ -190,8 +190,9 @@ class Matcher:
                 bool_match = abs(ctrl_scores - score) <= threshold
                 matches = ctrl_scores.loc[bool_match[bool_match.scores].index]
             elif method == 'min':
-                matches = abs(ctrl_scores - score).sort_values('scores').head(nmatches)
-                matches = matches[matches.scores <= threshold]
+                matches = abs(ctrl_scores - score).sort_values('scores')
+                ntie = matches.scores.searchsorted(0, side='right')
+                matches = matches.head(np.max([nmatches,ntie])).sample(frac=1).sort_values('scores').head(nmatches)
             else:
                 raise(AssertionError, "Invalid method parameter, use ('random', 'min')")
             if len(matches) == 0:
