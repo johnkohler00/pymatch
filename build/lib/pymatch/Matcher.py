@@ -1,6 +1,7 @@
 from __future__ import print_function
 from pymatch import *
 import pymatch.functions as uf
+import multiprocessing as mp
 
 class Matcher:
     """
@@ -259,6 +260,80 @@ class Matcher:
         else:
             print("{} is a continuous variable".format(col))
 
+
+    def process_column(self, col):
+        if uf.is_continuous(col, self.X) and col not in self.exclude:
+            # organize data
+            trb, cob = self.test[col], self.control[col]
+            tra = self.matched_data[self.matched_data[self.yvar]==True][col]
+            coa = self.matched_data[self.matched_data[self.yvar]==False][col]
+            xtb, xcb = ECDF(trb), ECDF(cob)
+            xta, xca = ECDF(tra),ECDF(coa)
+
+            # before/after stats
+            std_diff_med_before, std_diff_mean_before = uf.std_diff(trb, cob)
+            std_diff_med_after, std_diff_mean_after = uf.std_diff(tra, coa)
+            pb, truthb = uf.grouped_permutation_test(uf.chi2_distance, trb, cob)
+            pa, trutha = uf.grouped_permutation_test(uf.chi2_distance, tra, coa)
+            ksb = round(uf.ks_boot(trb, cob, nboots=1000), 6)
+            ksa = round(uf.ks_boot(tra, coa, nboots=1000), 6)
+
+            # plotting
+            f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, sharex=True, figsize=(12, 5))
+            ax1.plot(xcb.x, xcb.y, label='Control', color=self.control_color)
+            ax1.plot(xtb.x, xtb.y, label='Test', color=self.test_color)
+            ax1.plot(xcb.x, xcb.y, label='Control', color=self.control_color)
+            ax1.plot(xtb.x, xtb.y, label='Test', color=self.test_color)
+
+            title_str = '''
+            ECDF for {} {} Matching
+            KS p-value: {}
+            Grouped Perm p-value: {}
+            Std. Median Difference: {}
+            Std. Mean Difference: {}
+            '''
+            ax1.set_title(title_str.format(col, "before", ksb, pb,
+                                           std_diff_med_before, std_diff_mean_before))
+            ax2.plot(xca.x, xca.y, label='Control')
+            ax2.plot(xta.x, xta.y, label='Test')
+            ax2.set_title(title_str.format(col, "after", ksa, pa,
+                                           std_diff_med_after, std_diff_mean_after))
+            ax2.legend(loc="lower right")
+            plt.xlim((0, np.percentile(xta.x, 99)))
+
+            return {
+                "var": col,
+                "ks_before": ksb,
+                "ks_after": ksa,
+                "grouped_chisqr_before": pb,
+                "grouped_chisqr_after": pa,
+                "std_median_diff_before": std_diff_med_before,
+                "std_median_diff_after": std_diff_med_after,
+                "std_mean_diff_before": std_diff_mean_before,
+                "std_mean_diff_after": std_diff_mean_after
+            }
+        
+
+    def compare_continuous_mp(self, save=False, return_table=False):
+        pool = mp.Pool(mp.cpu_count())
+        test_results = pool.map(self.process_column, self.matched_data.columns)
+        pool.close()
+        pool.join()
+
+        var_order = [
+                    "var",
+                    "ks_before",
+                    "ks_after",
+                    "grouped_chisqr_before",
+                    "grouped_chisqr_after",
+                    "std_median_diff_before",
+                    "std_median_diff_after",
+                    "std_mean_diff_before",
+                    "std_mean_diff_after"
+                ]
+
+        return pd.DataFrame(test_results)[var_order] if return_table else None
+    
     def compare_continuous(self, save=False, return_table=False):
         """
         Plots the ECDFs for continuous features before and
