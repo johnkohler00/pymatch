@@ -311,11 +311,11 @@ class Matcher:
         Std. Median Difference: {}
         Std. Mean Difference: {}
         '''
-        ax1.set_title(title_str.format(result_dict['col'], "before", result_dict['ks_before'], result_dict['grouped_chisqr_before'],
+        ax1.set_title(title_str.format(result_dict['var'], "before", result_dict['ks_before'], result_dict['grouped_chisqr_before'],
                                         result_dict['std_median_diff_before'], result_dict['std_mean_diff_before']))
         ax2.plot(xca.x, xca.y, label='Control')
         ax2.plot(xta.x, xta.y, label='Test')
-        ax2.set_title(title_str.format(result_dict['col'], "after", result_dict['ks_after'], result_dict['grouped_chisqr_after'],
+        ax2.set_title(title_str.format(result_dict['var'], "after", result_dict['ks_after'], result_dict['grouped_chisqr_after'],
                                         result_dict['std_median_diff_after'], result_dict['std_mean_diff_after']))
         ax2.legend(loc="lower right")
         plt.xlim((0, np.percentile(xta.x, 99)))
