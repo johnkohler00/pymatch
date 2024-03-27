@@ -300,6 +300,7 @@ class Matcher:
                                            std_diff_med_after, std_diff_mean_after))
             ax2.legend(loc="lower right")
             plt.xlim((0, np.percentile(xta.x, 99)))
+            print(col)
             plt.show()
 
             return {
