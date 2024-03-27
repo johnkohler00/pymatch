@@ -316,7 +316,8 @@ class Matcher:
         ax2.plot(xca.x, xca.y, label='Control')
         ax2.plot(xta.x, xta.y, label='Test')
         ax2.set_title(title_str.format(result_dict['var'], "after", result_dict['ks_after'], result_dict['grouped_chisqr_after'],
-                                        result_dict['std_median_diff_after'], result_dict['std_mean_diff_after']))
+                                        result_dict['std_median_diff_after'], result_dict['std_mean_diff_after']),
+                     fontdict={'fontsize':10})
         ax2.legend(loc="lower right")
         plt.xlim((0, np.percentile(xta.x, 99)))
         plt.show()
