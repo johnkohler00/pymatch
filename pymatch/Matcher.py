@@ -5,7 +5,7 @@ import multiprocessing as mp
 
 class Matcher:
     """
-    Matcher Class -- Match data for an observational study.
+    Matcher Class -- Match data for an observational study. Non-Build.
 
     Parameters
     ----------
