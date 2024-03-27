@@ -94,7 +94,7 @@ def grouped_permutation_test(f, t, c, n_samples=1000):
 
 
 def std_diff(a, b):
-    sd = np.std(a.append(b))
+    sd = np.std(pd.concat([a,b]))
     med = (np.median(a) - np.median(b)) * 1.0 / sd
     mean = (np.mean(a) - np.mean(b)) * 1.0 / sd
     return med, mean
