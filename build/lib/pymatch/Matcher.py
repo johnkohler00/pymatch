@@ -262,37 +262,42 @@ class Matcher:
 
 
     def process_column(self, col):
-        if uf.is_continuous(col, self.X) and col not in self.exclude:
-            # organize data
-            trb, cob = self.test[col], self.control[col]
-            tra = self.matched_data[self.matched_data[self.yvar]==True][col]
-            coa = self.matched_data[self.matched_data[self.yvar]==False][col]
-            xtb, xcb = ECDF(trb), ECDF(cob)
-            xta, xca = ECDF(tra), ECDF(coa)
+        """
+        Calculation helper for multiprocess version of compare_continuous
+        """
+        # organize data
+        trb, cob = self.test[col], self.control[col]
+        tra = self.matched_data[self.matched_data[self.yvar]==True][col]
+        coa = self.matched_data[self.matched_data[self.yvar]==False][col]
+        xtb, xcb = ECDF(trb), ECDF(cob)
+        xta, xca = ECDF(tra), ECDF(coa)
 
-            # before/after stats
-            std_diff_med_before, std_diff_mean_before = uf.std_diff(trb, cob)
-            std_diff_med_after, std_diff_mean_after = uf.std_diff(tra, coa)
-            pb, truthb = uf.grouped_permutation_test(uf.chi2_distance, trb, cob)
-            pa, trutha = uf.grouped_permutation_test(uf.chi2_distance, tra, coa)
-            ksb = round(uf.ks_boot(trb, cob, nboots=1000), 6)
-            ksa = round(uf.ks_boot(tra, coa, nboots=1000), 6)
+        # before/after stats
+        std_diff_med_before, std_diff_mean_before = uf.std_diff(trb, cob)
+        std_diff_med_after, std_diff_mean_after = uf.std_diff(tra, coa)
+        pb, truthb = uf.grouped_permutation_test(uf.chi2_distance, trb, cob)
+        pa, trutha = uf.grouped_permutation_test(uf.chi2_distance, tra, coa)
+        ksb = round(uf.ks_boot(trb, cob, nboots=1000), 6)
+        ksa = round(uf.ks_boot(tra, coa, nboots=1000), 6)
 
-            x = (xtb, xcb, xta, xca)
-            result = {
-                "var": col,
-                "ks_before": ksb,
-                "ks_after": ksa,
-                "grouped_chisqr_before": pb,
-                "grouped_chisqr_after": pa,
-                "std_median_diff_before": std_diff_med_before,
-                "std_median_diff_after": std_diff_med_after,
-                "std_mean_diff_before": std_diff_mean_before,
-                "std_mean_diff_after": std_diff_mean_after
-            }
-            return x, result
+        x = (xtb, xcb, xta, xca)
+        result = {
+            "var": col,
+            "ks_before": ksb,
+            "ks_after": ksa,
+            "grouped_chisqr_before": pb,
+            "grouped_chisqr_after": pa,
+            "std_median_diff_before": std_diff_med_before,
+            "std_median_diff_after": std_diff_med_after,
+            "std_mean_diff_before": std_diff_mean_before,
+            "std_mean_diff_after": std_diff_mean_after
+        }
+        return x, result
     
-    def plot_continuous_column(self, xcb, xtb, xca, xta, result_dict):
+    def plot_continuous_column(self, xtb, xcb, xta, xca, result_dict):
+        """
+        Plotting helper for multiprocess version of compare_continuous
+        """
         f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, sharex=True, figsize=(12, 5))
         ax1.plot(xcb.x, xcb.y, label='Control', color=self.control_color)
         ax1.plot(xtb.x, xtb.y, label='Test', color=self.test_color)
@@ -317,14 +322,17 @@ class Matcher:
         plt.show()
 
     def compare_continuous_mp(self, save=False, return_table=False):
+        """
+        Multiprocess version of compare_continuous
+        """
+        # get list of continuous columns
+        cols = [col for col in self.matched_data.columns if uf.is_continuous(col, self.X) and col not in self.exclude]
+
         # multiprocess calculations
         pool = mp.Pool(mp.cpu_count())
-        xs, test_results = zip(*pool.map(self.process_column, self.matched_data.columns))
+        xs, test_results = zip(*pool.map(self.process_column, cols))
         pool.close()
         pool.join()
-
-        test_results = [r for r in test_results if r is not None]
-        xs = [x for x in xs if x is not None]
 
         for x, result in zip(xs, test_results):
             self.plot_continuous_column(*x, result)
