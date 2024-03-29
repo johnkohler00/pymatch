@@ -100,8 +100,9 @@ def std_diff(a, b, pd=pd):
     return med, mean
 
 
-def progress(i, n, prestr=''):
-    sys.stdout.write('\r{}: {}\{}'.format(prestr, i, n))
+def progress(i, n, prestr='', verbose=True):
+    if verbose:
+        sys.stdout.write('\r{}: {}\{}'.format(prestr, i, n))
 
 
 def is_continuous(colname, dmatrix):

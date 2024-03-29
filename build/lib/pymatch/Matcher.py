@@ -23,7 +23,7 @@ class Matcher:
         Useful for unique idenifiers
     """
 
-    def __init__(self, test, control, yvar, formula=None, exclude=[]):
+    def __init__(self, test, control, yvar, formula=None, exclude=[], verbose=True):
         # configure plots for ipynb
         plt.rcParams["figure.figsize"] = (10, 5)
         # variables generated during matching
@@ -59,9 +59,12 @@ class Matcher:
         self.minority, self.majority = [i[1] for i in sorted(zip([self.testn, self.controln],
                                                                  [1, 0]),
                                                              key=lambda x: x[0])]
-        print('Formula:\n{} ~ {}'.format(yvar, '+'.join(self.xvars)))
-        print('n majority:', len(self.data[self.data[yvar] == self.majority]))
-        print('n minority:', len(self.data[self.data[yvar] == self.minority]))
+        self.verbose = verbose
+        self.vprint = print if verbose else lambda *a, **k: None
+
+        self.vprint('Formula:\n{} ~ {}'.format(yvar, '+'.join(self.xvars)))
+        self.vprint('n majority:', len(self.data[self.data[yvar] == self.majority]))
+        self.vprint('n minority:', len(self.data[self.data[yvar] == self.minority]))
 
     def fit_scores(self, balance=True, nmodels=None):
         """
@@ -101,7 +104,7 @@ class Matcher:
             i = 0
             errors = 0
             while i < nmodels and errors < 5:
-                uf.progress(i+1, nmodels, prestr="Fitting Models on Balanced Samples")
+                uf.progress(i+1, nmodels, prestr="Fitting Models on Balanced Samples", verbose=self.verbose)
                 # sample from majority to create balance dataset
                 df = self.balanced_sample()
                 df = pd.concat([uf.drop_static_cols(df[df[self.yvar] == 1], yvar=self.yvar),
@@ -118,17 +121,17 @@ class Matcher:
                     i = i + 1
                 except Exception as e:
                     errors = errors + 1 # to avoid infinite loop for misspecified matrix
-                    print('Error: {}'.format(e))
-            print("\nAverage Accuracy:", "{}%".
+                    self.vprint('Error: {}'.format(e))
+            self.vprint("\nAverage Accuracy:", "{}%".
                   format(round(np.mean(self.model_accuracy) * 100, 2)))
         else:
             # ignore any imbalance and fit one model
-            print('Fitting 1 (Unbalanced) Model...')
+            self.vprint('Fitting 1 (Unbalanced) Model...')
             glm = GLM(self.y, self.X, family=sm.families.Binomial())
             res = glm.fit()
             self.model_accuracy.append(self._scores_to_accuracy(res, self.X, self.y))
             self.models.append(res)
-            print("\nAccuracy", round(np.mean(self.model_accuracy[0]) * 100, 2))
+            self.vprint("\nAccuracy", round(np.mean(self.model_accuracy[0]) * 100, 2))
 
 
     def predict_scores(self):
@@ -176,14 +179,14 @@ class Matcher:
         None
         """
         if 'scores' not in self.data.columns:
-            print("Propensity Scores have not been calculated. Using defaults...")
+            self.vprint("Propensity Scores have not been calculated. Using defaults...")
             self.fit_scores()
             self.predict_scores()
         test_scores = self.data[self.data[self.yvar]==True][['scores']]
         ctrl_scores = self.data[self.data[self.yvar]==False][['scores']]
         result, match_ids = [], []
         for i in range(len(test_scores)):
-            # uf.progress(i+1, len(test_scores), 'Matching Control to Test...')
+            # uf.progress(i+1, len(test_scores), 'Matching Control to Test...', verbose=self.verbose)
             match_id = i
             score = test_scores.iloc[i]
             if method == 'random':
@@ -260,7 +263,7 @@ class Matcher:
                                                                           col))[1], 6)
             return {'var':col, 'before':pval_before, 'after':pval_after}
         else:
-            print("{} is a continuous variable".format(col))
+            self.vprint("{} is a continuous variable".format(col))
 
 
     def process_column(self, col):
